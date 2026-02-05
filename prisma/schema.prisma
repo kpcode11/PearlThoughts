@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//
+// ==============================
+// ENUMS
+// ==============================
+
+enum UserRole {
+  patient
+  doctor
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum SessionType {
+  morning
+  evening
+}
+
+enum ConsultingType {
+  regular
+  online
+}
+
+enum VisitType {
+  first_time
+  report
+  follow_up
+  family
+}
+
+enum ComplaintType {
+  fever
+  cold
+  stomach_pain
+  headache
+  other
+}
+
+enum AppointmentStatus {
+  confirmed
+  cancelled
+  rescheduled
+  completed
+  failed
+}
+
+enum BookingSource {
+  app
+  ivr
+}
+
+//
+// ==============================
+// USER (AUTH BASE)
+// ==============================
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  fullName     String   @db.VarChar(150)
+  phone        String   @unique @db.VarChar(20)
+  passwordHash String   @db.VarChar(255)
+  role         UserRole
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient Patient?
+  doctor  Doctor?
+
+  @@map("users")
+}
+
+//
+// ==============================
+// PATIENT
+// ==============================
+
+model Patient {
+  id             String  @id @default(uuid()) @db.Uuid
+  userId         String  @unique @db.Uuid
+  age            Int
+  gender         Gender
+  weight         Decimal? @db.Decimal(5, 2)
+  bloodGroup     String?  @db.VarChar(10)
+  medicalHistory String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@map("patients")
+}
+
+//
+// ==============================
+// DOCTOR
+// ==============================
+
+model Doctor {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  specialization     String   @db.VarChar(120)
+  qualification      String   @db.VarChar(150)
+  experienceYears    Int
+  bio                String?
+  clinicAddress      String   @db.VarChar(255)
+  consultationFee    Decimal  @db.Decimal(10, 2)
+  availabilityStatus Boolean  @default(true)
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots        AvailableSlot[]
+  appointments Appointment[]
+
+  @@map("doctors")
+}
+
+//
+// ==============================
+// AVAILABLE SLOTS (AVAILABILITY)
+// ==============================
+
+model AvailableSlot {
+  id        String @id @default(uuid()) @db.Uuid
+  doctorId  String @db.Uuid
+
+  // Actual calendar date for slot
+  date DateTime @db.Date
+
+  // "Monday", "Tuesday" etc (or you can make this enum)
+  dayOfWeek String @db.VarChar(20)
+
+  session   SessionType
+
+  // Prisma doesn't reliably support pure SQL TIME type.
+  // So store as string like "09:30" and "11:00"
+  startTime String @db.VarChar(10)
+  endTime   String @db.VarChar(10)
+
+  isBooked Boolean @default(false)
+
+  doctor      Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment Appointment?
+
+  @@index([doctorId])
+  @@index([date])
+  @@map("available_slots")
+}
+
+//
+// ==============================
+// APPOINTMENTS
+// ==============================
+
+model Appointment {
+  id String @id @default(uuid()) @db.Uuid
+
+  doctorId  String @db.Uuid
+  patientId String @db.Uuid
+  slotId    String @unique @db.Uuid
+
+  tokenNo        Int
+  consultingType ConsultingType
+  visitType      VisitType
+  complaint      ComplaintType
+
+  isTimeConfirmed Boolean @default(false)
+  status          AppointmentStatus @default(confirmed)
+  bookingSource   BookingSource
+
+  scheduledOn        DateTime
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor  Doctor        @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  slot    AvailableSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@index([patientId])
+  @@index([slotId])
+  @@map("appointments")
+}
