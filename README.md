@@ -96,3 +96,21 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+---
+
+## Authentication (Added)
+
+This project now includes a simple authentication system:
+
+- Email/password signup & login
+- Google OAuth 2.0 sign-in (creates a patient by default)
+- JWT stored in an HTTP-only cookie named `jid`
+- Simple server-rendered pages at `/auth/signup`, `/auth/login`, and `/dashboard`
+
+Setup notes:
+1. Copy `.env.example` → `.env` and set `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`.
+2. Run `npx prisma migrate dev` locally to apply schema changes.
+3. Start the app: `npm run start:dev` and visit `http://localhost:3000/auth/signup`.
+
+If you'd like: add a confirmation step for new email signups, switch Google signups to create doctors instead of patients, or add refresh tokens. Reach out and I can add those features. 
