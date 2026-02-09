@@ -62,4 +62,31 @@ export class AuthController {
     res.clearCookie('jid');
     return res.redirect('/auth/login');
   }
+
+  // ─── JSON API ROUTES (for Postman / mobile) ───
+
+  @Post('api/signup')
+  async apiSignup(@Body() dto: SignupDto, @Res() res: Response) {
+    const user = await this.authService.signup(dto);
+    const token = this.jwtService.sign({ sub: user.id, role: user.role });
+    res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
+  }
+
+  @Post('api/login')
+  async apiLogin(@Body() dto: LoginDto, @Res() res: Response) {
+    const identifier = dto.email ?? dto.phone;
+    if (!identifier) return res.status(400).json({ message: 'Provide email or phone' });
+    const user = await this.authService.validateUserByEmailOrPhone(identifier, dto.password);
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    const token = this.jwtService.sign({ sub: user.id, role: user.role });
+    res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  async me(@Req() req: Request) {
+    return (req as any).user;
+  }
 }

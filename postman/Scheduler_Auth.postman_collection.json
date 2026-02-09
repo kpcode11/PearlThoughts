@@ -1,0 +1,369 @@
+{
+  "info": {
+    "name": "Scheduler App - Auth",
+    "description": "Authentication routes for signup, login, Google OAuth, dashboard, and JSON API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "jwtToken", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "API (JSON)",
+      "description": "JSON endpoints that return access tokens — ideal for Postman and mobile clients",
+      "item": [
+        {
+          "name": "API Signup - Patient",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+1234567890\",\n  \"password\": \"password123\",\n  \"role\": \"patient\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/api/signup", "host": ["{{baseUrl}}"], "path": ["auth", "api", "signup"] },
+            "description": "Creates a patient account and returns { accessToken, user }"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "pm.test('Returns 201/200 with accessToken', function () {",
+                "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                "    pm.expect(json).to.have.property('accessToken');",
+                "    pm.expect(json).to.have.property('user');",
+                "});",
+                "if (json.accessToken) {",
+                "    pm.collectionVariables.set('jwtToken', json.accessToken);",
+                "    console.log('JWT saved');",
+                "}",
+                "if (json.user && json.user.id) {",
+                "    pm.collectionVariables.set('userId', json.user.id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "API Signup - Doctor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Dr. Jane Smith\",\n  \"email\": \"drjane@example.com\",\n  \"phone\": \"+1987654321\",\n  \"password\": \"doctor123\",\n  \"role\": \"doctor\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/api/signup", "host": ["{{baseUrl}}"], "path": ["auth", "api", "signup"] },
+            "description": "Creates a doctor account and returns { accessToken, user }"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "pm.test('Returns accessToken', function () {",
+                "    pm.expect(json).to.have.property('accessToken');",
+                "    pm.expect(json.user.role).to.equal('doctor');",
+                "});",
+                "if (json.accessToken) pm.collectionVariables.set('jwtToken', json.accessToken);"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "API Login - Email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/api/login", "host": ["{{baseUrl}}"], "path": ["auth", "api", "login"] },
+            "description": "Login with email and get JSON { accessToken, user }"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "pm.test('Returns accessToken', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "    pm.expect(json).to.have.property('accessToken');",
+                "});",
+                "if (json.accessToken) pm.collectionVariables.set('jwtToken', json.accessToken);"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "API Login - Invalid Credentials",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"wrong@example.com\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/api/login", "host": ["{{baseUrl}}"], "path": ["auth", "api", "login"] },
+            "description": "Should return 401 with error message"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 401', function () {",
+                "    pm.expect(pm.response.code).to.equal(401);",
+                "    pm.expect(pm.response.json().message).to.equal('Invalid credentials');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Get Current User (auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Returns the currently authenticated user's id and role from the JWT"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "pm.test('Returns user info', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "    pm.expect(json).to.have.property('id');",
+                "    pm.expect(json).to.have.property('role');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Get Current User (unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Should return 401 when no token is provided"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 401', function () {",
+                "    pm.expect(pm.response.code).to.equal(401);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Browser Auth (redirect-based)",
+      "description": "Form-post routes that set cookies and redirect — mimic browser behavior",
+      "item": [
+        {
+          "name": "Signup (form post)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Alice Patient\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"alice123\",\n  \"role\": \"patient\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const cookies = pm.response.headers.get('Set-Cookie');",
+                "if (cookies) {",
+                "    const m = cookies.match(/jid=([^;]+)/);",
+                "    if (m) pm.collectionVariables.set('jwtToken', m[1]);",
+                "}",
+                "pm.test('Redirects', function () {",
+                "    pm.expect(pm.response.code).to.be.oneOf([302, 301, 200]);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Login (form post)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"alice123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const cookies = pm.response.headers.get('Set-Cookie');",
+                "if (cookies) {",
+                "    const m = cookies.match(/jid=([^;]+)/);",
+                "    if (m) pm.collectionVariables.set('jwtToken', m[1]);",
+                "}",
+                "pm.test('Redirects', function () {",
+                "    pm.expect(pm.response.code).to.be.oneOf([302, 301, 200]);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Google OAuth - Initiate",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/google", "host": ["{{baseUrl}}"], "path": ["auth", "google"] },
+            "description": "Redirects to Google consent screen. Open in browser — Postman will show the redirect."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "jid={{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Redirects to login', function () {",
+                "    pm.expect(pm.response.code).to.be.oneOf([302, 301, 200]);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Protected Routes",
+      "item": [
+        {
+          "name": "Dashboard (Bearer token)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/dashboard", "host": ["{{baseUrl}}"], "path": ["dashboard"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Dashboard returns 200', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Dashboard (cookie)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "jid={{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/dashboard", "host": ["{{baseUrl}}"], "path": ["dashboard"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Dashboard returns 200', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Dashboard (no auth — 401)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/dashboard", "host": ["{{baseUrl}}"], "path": ["dashboard"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 401', function () {",
+                "    pm.expect(pm.response.code).to.equal(401);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Pages (HTML)",
+      "item": [
+        {
+          "name": "Signup Page",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 200 with form', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "    pm.expect(pm.response.text()).to.include('Create an account');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Login Page",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 200 with form', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "    pm.expect(pm.response.text()).to.include('Welcome back');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        }
+      ]
+    }
+  ]
+}
