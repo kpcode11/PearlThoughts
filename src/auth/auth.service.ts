@@ -42,9 +42,9 @@ export class AuthService {
     if (dto.role === 'patient') {
       await this.prisma.patient.create({ data: { userId: created.id, age: 0, gender: 'other' } });
     } else {
-      await this.prisma.doctor.create({
-        data: { userId: created.id, specialization: 'General', qualification: 'MBBS', experienceYears: 0, clinicAddress: '', consultationFee: 0 },
-      });
+      const doctor = await this.prisma.doctor.create({ data: { userId: created.id } });
+      // also create blank profile so relation exists
+      await this.prisma.profile.create({ data: { doctorId: doctor.id } });
     }
 
     return created;
@@ -75,7 +75,8 @@ export class AuthService {
       if (role === 'patient') {
         await this.prisma.patient.create({ data: { userId: user.id, age: 0, gender: 'other' } });
       } else {
-        await this.prisma.doctor.create({ data: { userId: user.id, specialization: 'General', qualification: 'MBBS', experienceYears: 0, clinicAddress: '', consultationFee: 0 } });
+        const doctor = await this.prisma.doctor.create({ data: { userId: user.id } });
+        await this.prisma.profile.create({ data: { doctorId: doctor.id } });
       }
     } else if (!user.googleId) {
       user = await this.prisma.user.update({ where: { id: user.id }, data: { googleId: profile.id } });
@@ -116,16 +117,36 @@ export class AuthService {
     if (user.role === 'patient') {
       await this.prisma.patient.update({ where: { userId }, data: { age: dto.age ?? undefined, gender: dto.gender ?? undefined } });
     } else {
-      await this.prisma.doctor.update({
-        where: { userId },
-        data: {
+      // update doctor's profile
+      const doctor = await this.prisma.doctor.findUnique({ where: { userId } });
+      if (!doctor) throw new UnauthorizedException();
+      // ensure profile exists
+      await this.prisma.profile.upsert({
+        where: { doctorId: doctor.id },
+        update: {
           specialization: dto.specialization ?? undefined,
           qualification: dto.qualification ?? undefined,
           experienceYears: dto.experienceYears ?? undefined,
           clinicAddress: dto.clinicAddress ?? undefined,
           consultationFee: dto.consultationFee ?? undefined,
         },
+        create: {
+          doctorId: doctor.id,
+          specialization: dto.specialization,
+          qualification: dto.qualification,
+          experienceYears: dto.experienceYears,
+          clinicAddress: dto.clinicAddress,
+          consultationFee: dto.consultationFee,
+        },
       });
+
+      // optionally handle multiple specializations list
+      if (dto.specializations && Array.isArray(dto.specializations)) {
+        // simple strategy: delete existing and re-create
+        await this.prisma.specialization.deleteMany({ where: { doctorId: doctor.id } });
+        const specsData = dto.specializations.map((name: string) => ({ doctorId: doctor.id, name }));
+        await this.prisma.specialization.createMany({ data: specsData });
+      }
     }
     await this.prisma.user.update({ where: { id: userId }, data: { isOnboarded: true } });
     return true;

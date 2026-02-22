@@ -6,20 +6,36 @@ export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
   async listDoctors(specialization?: string) {
-    const where: any = {};
+    // if filtering by specialization, we need to look at the Specialization table
+    let doctorIds: string[] | undefined;
     if (specialization) {
-      where.specialization = specialization;
+      const specs = await this.prisma.specialization.findMany({
+        where: { name: specialization },
+        select: { doctorId: true },
+      });
+      doctorIds = specs.map(s => s.doctorId);
+      if (doctorIds.length === 0) {
+        return [];
+      }
     }
+
     const doctors = await this.prisma.doctor.findMany({
-      where,
-      include: { user: { select: { fullName: true, email: true } }, slots: true },
+      where: doctorIds ? { id: { in: doctorIds } } : undefined,
+      include: {
+        user: { select: { fullName: true, email: true } },
+        slots: true,
+        profile: true,
+        specializations: true,
+      },
     });
+
     return doctors.map(d => ({
       id: d.id,
       fullName: d.user.fullName,
       email: d.user.email,
-      specialization: d.specialization,
       availabilityStatus: d.availabilityStatus,
+      profile: d.profile,
+      specializations: d.specializations.map(s => s.name),
       slots: d.slots,
     }));
   }

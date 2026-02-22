@@ -15,7 +15,12 @@ export class OnboardDto {
   // fields specific to doctor
   @IsOptional()
   @IsString()
+  // allow multiple specializations during onboarding
   specialization?: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  specializations?: string[];
 
   @IsOptional()
   @IsString()

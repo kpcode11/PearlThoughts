@@ -137,19 +137,43 @@ model Patient {
 model Doctor {
   id                 String   @id @default(uuid()) @db.Uuid
   userId             String   @unique @db.Uuid
-  specialization     String   @db.VarChar(120)
-  qualification      String   @db.VarChar(150)
-  experienceYears    Int
-  bio                String?
-  clinicAddress      String   @db.VarChar(255)
-  consultationFee    Decimal  @db.Decimal(10, 2)
   availabilityStatus Boolean  @default(true)
 
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile      Profile?
   slots        AvailableSlot[]
   appointments Appointment[]
+  specializations Specialization[]
 
   @@map("doctors")
+}
+
+// doctor-specific profile information split off for 1:1 relation
+model Profile {
+  id               String   @id @default(uuid()) @db.Uuid
+  doctorId         String   @unique @db.Uuid
+  specialization   String?  @db.VarChar(120)
+  qualification    String?  @db.VarChar(150)
+  experienceYears  Int?
+  bio              String?
+  clinicAddress    String?  @db.VarChar(255)
+  consultationFee  Decimal? @db.Decimal(10, 2)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// one doctor can have many specialization entries (e.g. Cardiology, Pediatrics)
+model Specialization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  doctorId  String   @db.Uuid
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("specializations")
 }
 
 //
