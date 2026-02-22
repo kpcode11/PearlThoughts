@@ -99,18 +99,73 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ---
 
-## Authentication (Added)
+## Backend API Overview
 
-This project now includes a simple authentication system:
+This repository contains the backend for a scheduling application built with NestJS and Prisma. The focus is on authentication, registration, and onboarding (week 1 deliverables).
 
-- Email/password signup & login
-- Google OAuth 2.0 sign-in (creates a patient by default)
-- JWT stored in an HTTP-only cookie named `jid`
-- Simple server-rendered pages at `/auth/signup`, `/auth/login`, and `/dashboard`
+### Features implemented
 
-Setup notes:
-1. Copy `.env.example` → `.env` and set `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`.
-2. Run `npx prisma migrate dev` locally to apply schema changes.
-3. Start the app: `npm run start:dev` and visit `http://localhost:3000/auth/signup`.
+- REST API prefixed at `/api/v1`
+- User model with roles (`patient` / `doctor`)
+- Email/phone signup & login with password hashing
+- Google OAuth flow (patient created by default)
+- JWT based auth (access token signed with `JWT_SECRET`, optional cookie `jid`)
+- Verification tokens for email/phone (6‑digit code logged to console)
+- Onboarding endpoint to complete profile (patient/doctor data)
+- Prisma schema with relationships for users, patients, doctors, slots, appointments
+- Postman collection available under `postman/Scheduler_Auth.postman_collection.json`
 
-If you'd like: add a confirmation step for new email signups, switch Google signups to create doctors instead of patients, or add refresh tokens. Reach out and I can add those features. 
+### Authentication endpoints
+
+| Method | Path                      | Description |
+|--------|---------------------------|-------------|
+| POST   | `/api/v1/auth/signup`     | register with email/phone/password and select `role` |
+| POST   | `/api/v1/auth/login`      | login with email or phone + password |
+| POST   | `/api/v1/auth/signout`    | clear auth cookie; client should drop token |
+| GET    | `/api/v1/auth/me`         | return current user (JWT guard) |
+| POST   | `/api/v1/auth/request-verification` | generate OTP for email/phone (requires JWT) |
+| POST   | `/api/v1/auth/verify`     | submit OTP and type (`email`/`phone`) |
+| POST   | `/api/v1/auth/onboard`    | complete profile details |
+| POST   | `/api/v1/auth/google`     | start OAuth flow (stubbed) |
+| POST   | `/api/v1/auth/google/callback` | OAuth callback (stubbed) |
+
+### Database and ER Diagram
+
+The Prisma schema lives at `prisma/schema.prisma`. The core entities are:
+
+- **User** (with verification and onboarding flags)
+- **Patient** and **Doctor** (subtypes holding profile info)
+- **AvailableSlot** and **Appointment** for scheduling
+- **VerificationToken** for OTP codes
+
+Below is a simple ER diagram illustrating relationships:
+
+```mermaid
+erDiagram
+    USER ||--o{ PATIENT : has
+    USER ||--o{ DOCTOR : has
+    PATIENT ||--o{ APPOINTMENT : books
+    DOCTOR ||--o{ APPOINTMENT : serves
+    DOCTOR ||--o{ AVAILABLE_SLOT : offers
+    AVAILABLE_SLOT ||--o{ APPOINTMENT : assigned
+    USER ||--o{ VERIFICATION_TOKEN : issues
+```
+
+> You can generate a visual version by running `npx prisma studio` or using any ERD tool with the schema.
+
+### Local setup
+
+1. Install dependencies: `npm install`.
+2. Create `.env` with at least `DATABASE_URL` and `JWT_SECRET`. For Google login add the `GOOGLE_*` values or omit to disable.
+3. Migrate the database:
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+4. (Optional) seed or inspect with `npx prisma studio`.
+5. Start development server: `npm run start:dev`.
+
+Use the Postman collection to exercise the API; the `signup` request already sets a random role and password.
+
+---
+
+*By pruning views and controllers this backend is now purely REST‑oriented. The previous handlebars templates and `public` assets have been removed to keep the focus on server‑side logic.* 

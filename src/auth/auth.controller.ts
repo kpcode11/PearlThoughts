@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Res, Req, UseGuards, Render, Redirect } from '@nestjs/common';
+import { Controller, Get, Post, Body, Res, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { VerifyDto } from './dto/verify.dto';
+import { OnboardDto } from './dto/onboard.dto';
 import type { Response, Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@nestjs/passport';
@@ -10,71 +12,18 @@ import { AuthGuard } from '@nestjs/passport';
 export class AuthController {
   constructor(private authService: AuthService, private jwtService: JwtService) {}
 
-  @Get('signup')
-  @Render('auth/signup')
-  signupForm() {
-    return {};
-  }
+  // ---------- standard REST endpoints ----------
 
   @Post('signup')
   async signup(@Body() dto: SignupDto, @Res() res: Response) {
     const user = await this.authService.signup(dto);
     const token = this.jwtService.sign({ sub: user.id, role: user.role });
     res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    return res.redirect('/dashboard');
-  }
-
-  @Get('login')
-  @Render('auth/login')
-  loginForm() {
-    return {};
+    return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
   }
 
   @Post('login')
   async login(@Body() dto: LoginDto, @Res() res: Response) {
-    const identifier = dto.email ?? dto.phone;
-    if (!identifier) return res.status(400).render('auth/login', { error: 'Provide email or phone' });
-    const user = await this.authService.validateUserByEmailOrPhone(identifier, dto.password);
-    if (!user) return res.status(401).render('auth/login', { error: 'Invalid credentials' });
-    const token = this.jwtService.sign({ sub: user.id, role: user.role });
-    res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    return res.redirect('/dashboard');
-  }
-
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  googleAuth() {
-    // initiates Google OAuth2 login flow
-  }
-
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
-    // req.user is populated by the GoogleStrategy
-    const user: any = (req as any).user as any;
-    const token = this.jwtService.sign({ sub: user.id, role: user.role });
-    res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    return res.redirect('/dashboard');
-  }
-
-  @Get('logout')
-  logout(@Res() res: Response) {
-    res.clearCookie('jid');
-    return res.redirect('/auth/login');
-  }
-
-  // ─── JSON API ROUTES (for Postman / mobile) ───
-
-  @Post('api/signup')
-  async apiSignup(@Body() dto: SignupDto, @Res() res: Response) {
-    const user = await this.authService.signup(dto);
-    const token = this.jwtService.sign({ sub: user.id, role: user.role });
-    res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
-  }
-
-  @Post('api/login')
-  async apiLogin(@Body() dto: LoginDto, @Res() res: Response) {
     const identifier = dto.email ?? dto.phone;
     if (!identifier) return res.status(400).json({ message: 'Provide email or phone' });
     const user = await this.authService.validateUserByEmailOrPhone(identifier, dto.password);
@@ -84,9 +33,55 @@ export class AuthController {
     return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
   }
 
+  @Post('signout')
+  async signout(@Res() res: Response) {
+    // clear cookie, client should also drop token
+    res.clearCookie('jid');
+    return res.json({ success: true });
+  }
+
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async me(@Req() req: Request) {
     return (req as any).user;
+  }
+
+  // request a verification code for email or phone (logged to console)
+  @Post('request-verification')
+  @UseGuards(AuthGuard('jwt'))
+  async requestVerification(@Req() req: Request, @Body('type') type: 'email' | 'phone') {
+    const user = (req as any).user;
+    await this.authService.createVerificationToken(user.id, type);
+    return { success: true, message: `token sent (console output)` };
+  }
+
+  @Post('verify')
+  async verify(@Body() dto: VerifyDto) {
+    const ok = await this.authService.verifyToken(dto.token, dto.type);
+    return { success: ok };
+  }
+
+  @Post('onboard')
+  @UseGuards(AuthGuard('jwt'))
+  async onboard(@Req() req: Request, @Body() dto: OnboardDto) {
+    const user = (req as any).user;
+    await this.authService.completeOnboarding(user.id, dto);
+    return { success: true };
+  }
+  // ---------- google oauth (kept for later mobile/web flows) ----------
+
+  @Post('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {
+    // passport handles redirect
+  }
+
+  @Post('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
+    const user: any = (req as any).user;
+    const token = this.jwtService.sign({ sub: user.id, role: user.role });
+    res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
   }
 }
