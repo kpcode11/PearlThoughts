@@ -108,7 +108,8 @@ This repository contains the backend for a scheduling application built with Nes
 - REST API prefixed at `/api/v1`
 - User model with roles (`patient` / `doctor`)
 - Email/phone signup & login with password hashing
-- Google OAuth flow (patient created by default)
+- Google OAuth flow (patient or doctor) – pass `state=doctor` query to create a doctor account,
+  otherwise defaults to patient. Callback returns JWT.
 - JWT based auth (access token signed with `JWT_SECRET`, optional cookie `jid`)
 - Verification tokens for email/phone (6‑digit code logged to console)
 - Onboarding endpoint to complete profile (patient/doctor data)
@@ -121,8 +122,10 @@ This repository contains the backend for a scheduling application built with Nes
 |--------|---------------------------|-------------|
 | POST   | `/api/v1/auth/signup`     | register with email/phone/password and select `role` |
 | POST   | `/api/v1/auth/login`      | login with email or phone + password |
-| POST   | `/api/v1/auth/signout`    | clear auth cookie; client should drop token |
+| POST   | `/api/v1/auth/signout`    | clear auth cookie; client should drop token (logout) |
 | GET    | `/api/v1/auth/me`         | return current user (JWT guard) |
+| GET    | `/auth/google?state=doctor` or `state=patient` | start Google OAuth (redirect, use browser) |
+| GET    | `/auth/google/callback`   | OAuth callback returns JWT |
 | POST   | `/api/v1/auth/request-verification` | generate OTP for email/phone (requires JWT) |
 | POST   | `/api/v1/auth/verify`     | submit OTP and type (`email`/`phone`) |
 | POST   | `/api/v1/auth/onboard`    | complete profile details |
