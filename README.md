@@ -114,7 +114,7 @@ This repository contains the backend for a scheduling application built with Nes
 - Verification tokens for email/phone (6‑digit code logged to console)
 - Onboarding endpoint to complete profile (patient/doctor data)
 - Prisma schema with relationships for users, patients, doctors, slots, appointments
-- Postman collection available under `postman/Scheduler_Auth.postman_collection.json`
+- Postman collection available under `postman/Scheduler_Auth.postman_collection.json` (the minimal version can be imported into Hoppscotch or any HTTP client for testing)
 
 ### Authentication endpoints
 
@@ -126,7 +126,15 @@ This repository contains the backend for a scheduling application built with Nes
 | GET    | `/api/v1/auth/me`         | return current user (JWT guard) |
 | GET    | `/auth/google?state=doctor` or `state=patient` | start Google OAuth (redirect, use browser) |
 | GET    | `/auth/google/callback`   | OAuth callback returns JWT |
-| POST   | `/api/v1/auth/request-verification` | generate OTP for email/phone (requires JWT) |
+
+### Appointment endpoints (Week 2)
+
+| Method | Path                                      | Description |
+|--------|-------------------------------------------|-------------|
+| GET    | `/api/v1/appointments/doctors`            | list doctors (optional `?specialization=`) |
+| POST   | `/api/v1/appointments`                    | book appointment (patient only) |
+| POST   | `/api/v1/appointments/:id/cancel`         | cancel your appointment |
+| GET    | `/api/v1/appointments`                    | fetch current patient’s appointments || POST   | `/api/v1/auth/request-verification` | generate OTP for email/phone (requires JWT) |
 | POST   | `/api/v1/auth/verify`     | submit OTP and type (`email`/`phone`) |
 | POST   | `/api/v1/auth/onboard`    | complete profile details |
 | POST   | `/api/v1/auth/google`     | start OAuth flow (stubbed) |
@@ -167,7 +175,7 @@ erDiagram
 4. (Optional) seed or inspect with `npx prisma studio`.
 5. Start development server: `npm run start:dev`.
 
-Use the Postman collection to exercise the API; the `signup` request already sets a random role and password.
+Use the Postman (or Hoppscotch) collection to exercise the API; the `signup` request already sets a random role and password. Week 2 appointments endpoints have also been added to the minimal collection.
 
 ---
 

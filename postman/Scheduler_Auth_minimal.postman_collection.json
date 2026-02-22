@@ -106,6 +106,85 @@
           }
         },
         {
+          "name": "List doctors",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/appointments/doctors", "host": ["{{baseUrl}}"], "path": ["api","v1","appointments","doctors"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "if (Array.isArray(json) && json.length) {",
+                "  pm.collectionVariables.set('doctorId', json[0].id);",
+                "  if (json[0].slots && json[0].slots.length) {",
+                "    pm.collectionVariables.set('slotId', json[0].slots[0].id);",
+                "  }",
+                "}",
+                "pm.test('doctor list OK', () => { pm.expect(pm.response.code).to.equal(200); });"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Book appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {"mode":"raw","raw":"{\"doctorId\":\"{{doctorId}}\",\"slotId\":\"{{slotId}}\",\"consultingType\":\"regular\",\"visitType\":\"first_time\",\"complaint\":\"fever\"}"},
+            "url": { "raw": "{{baseUrl}}/api/v1/appointments", "host": ["{{baseUrl}}"], "path": ["api","v1","appointments"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('book returned 200', () => { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                "const json = pm.response.json();",
+                "if(json && json.id) pm.collectionVariables.set('appointmentId', json.id);"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "Cancel appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","v1","appointments","{{appointmentId}}","cancel"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('cancel returned 200', () => { pm.expect(pm.response.code).to.equal(200); });",
+                "// optionally check status field if the API returns appointment object",
+                "// const json = pm.response.json(); pm.expect(json.status).to.equal('cancelled');"
+              ],
+              "type": "text/javascript"
+            }
+          }]
+        },
+
+        {
+          "name": "My appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/appointments", "host": ["{{baseUrl}}"], "path": ["api","v1","appointments"] }
+          }
+        },
+
+        {
           "name": "Google OAuth -- patient",
           "request": {
             "method": "GET",
