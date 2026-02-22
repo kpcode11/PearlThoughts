@@ -15,6 +15,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         clientSecret: 'not-configured',
         callbackURL: process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3000/auth/google/callback',
         scope: ['profile', 'email'],
+        passReqToCallback: true,
       });
       console.warn('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env');
       return;
@@ -24,12 +25,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret,
       callbackURL: process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3000/auth/google/callback',
       scope: ['profile', 'email'],
+      passReqToCallback: true,
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: Function) {
+  // req is passed because passReqToCallback=true
+  async validate(req: any, accessToken: string, refreshToken: string, profile: any, done: Function) {
     try {
-      const user = await this.authService.findOrCreateFromGoogle(profile);
+      // allow role to be sent via `state` parameter, default to patient
+      const state: string | undefined = req.query.state;
+      const role = state === 'doctor' ? 'doctor' : 'patient';
+      const user = await this.authService.findOrCreateFromGoogle(profile, role);
       done(null, user);
     } catch (err) {
       done(err, false);

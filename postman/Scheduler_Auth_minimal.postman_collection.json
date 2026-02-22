@@ -104,6 +104,22 @@
             "body": {"mode":"raw","raw":"{\"age\":30,\"gender\":\"other\"}"},
             "url": { "raw": "{{baseUrl}}/api/v1/auth/onboard", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","onboard"] }
           }
+        },
+        {
+          "name": "Google OAuth -- patient",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/google", "host": ["{{baseUrl}}"], "path": ["auth","google"], "query": [{"key":"state","value":"patient"}] }
+          },
+          "description": "Initiate Google login as patient. Follow redirect in browser."
+        },
+        {
+          "name": "Google OAuth -- doctor",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/google?state=doctor", "host": ["{{baseUrl}}"], "path": ["auth","google"], "query": [{"key":"state","value":"doctor"}] }
+          },
+          "description": "Initiate Google login as doctor. Follow redirect in browser."
         }
       ]
     }

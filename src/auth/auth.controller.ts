@@ -68,20 +68,21 @@ export class AuthController {
     await this.authService.completeOnboarding(user.id, dto);
     return { success: true };
   }
-  // ---------- google oauth (kept for later mobile/web flows) ----------
+  // ---------- google oauth (social login) ----------
+  // `role` may be provided as query state (patient or doctor).  
+  // e.g. /auth/google?state=doctor
 
-  @Post('google')
+  @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {
-    // passport handles redirect
+    // passport will redirect to Google
   }
 
-  @Post('google/callback')
+  @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
     const user: any = (req as any).user;
     const token = this.jwtService.sign({ sub: user.id, role: user.role });
     res.cookie('jid', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     return res.json({ accessToken: token, user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
-  }
-}
+  }}

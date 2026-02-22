@@ -57,22 +57,26 @@ export class AuthService {
     };
   }
 
-  async findOrCreateFromGoogle(profile: any) {
+  async findOrCreateFromGoogle(profile: any, role: 'patient' | 'doctor' = 'patient') {
     // profile contains emails, id, displayName
     const email = profile.emails?.[0]?.value;
     let user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
-      // create a patient by default, onboarding still required
+      // create with requested role
       user = await this.prisma.user.create({
         data: {
           fullName: profile.displayName ?? 'Google User',
           email,
           googleId: profile.id,
-          role: 'patient',
+          role,
           isEmailVerified: true, // google verified
         },
       });
-      await this.prisma.patient.create({ data: { userId: user.id, age: 0, gender: 'other' } });
+      if (role === 'patient') {
+        await this.prisma.patient.create({ data: { userId: user.id, age: 0, gender: 'other' } });
+      } else {
+        await this.prisma.doctor.create({ data: { userId: user.id, specialization: 'General', qualification: 'MBBS', experienceYears: 0, clinicAddress: '', consultationFee: 0 } });
+      }
     } else if (!user.googleId) {
       user = await this.prisma.user.update({ where: { id: user.id }, data: { googleId: profile.id } });
     }
