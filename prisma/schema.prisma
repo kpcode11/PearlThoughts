@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -75,17 +74,39 @@ enum BookingSource {
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   fullName     String   @db.VarChar(150)
-  phone        String   @unique @db.VarChar(20)
-  passwordHash String   @db.VarChar(255)
+  email        String?  @unique @db.VarChar(255)
+  phone        String?  @unique @db.VarChar(20)
+  passwordHash String?  @db.VarChar(255)
+  googleId     String?  @unique @db.VarChar(100)
   role         UserRole
+
+  // onboarding / verification flags
+  isEmailVerified Boolean @default(false)
+  isPhoneVerified Boolean @default(false)
+  isOnboarded     Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   patient Patient?
   doctor  Doctor?
+  verificationTokens VerificationToken[]
 
   @@map("users")
+}
+
+// temporary tokens for email/phone verification or onboarding
+model VerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String   // 'email' | 'phone' | 'onboard'
+  token     String   @db.VarChar(20)
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("verification_tokens")
 }
 
 //
