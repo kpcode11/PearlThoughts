@@ -183,6 +183,70 @@
             "url": { "raw": "{{baseUrl}}/api/v1/appointments", "host": ["{{baseUrl}}"], "path": ["api","v1","appointments"] }
           }
         },
+        {
+          "name": "Doctor: get profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/doctor/profile", "host": ["{{baseUrl}}"], "path": ["api","v1","doctor","profile"] }
+          }
+        },
+        {
+          "name": "Doctor: update profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {"mode":"raw","raw":"{\"bio\":\"Experienced specialist\",\"specializations\":[\"Cardiology\"]}"},
+            "url": { "raw": "{{baseUrl}}/api/v1/doctor/profile", "host": ["{{baseUrl}}"], "path": ["api","v1","doctor","profile"] }
+          }
+        },
+        {
+          "name": "Doctor: create slot",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {"mode":"raw","raw":"{\"date\":\"2026-03-01\",\"dayOfWeek\":\"Monday\",\"session\":\"morning\",\"startTime\":\"09:00\",\"endTime\":\"12:00\"}"},
+            "url": { "raw": "{{baseUrl}}/api/v1/doctor/slots", "host": ["{{baseUrl}}"], "path": ["api","v1","doctor","slots"] }
+          }
+        },
+        {
+          "name": "Doctor: list slots",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/doctor/slots", "host": ["{{baseUrl}}"], "path": ["api","v1","doctor","slots"] }
+          }
+        },
+        {
+          "name": "Doctor: list appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/doctor/appointments", "host": ["{{baseUrl}}"], "path": ["api","v1","doctor","appointments"] }
+          }
+        },
+        {
+          "name": "Doctor: cancel appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/doctor/appointments/{{appointmentId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","v1","doctor","appointments","{{appointmentId}}","cancel"] }
+          }
+        },
 
         {
           "name": "Google OAuth -- patient",

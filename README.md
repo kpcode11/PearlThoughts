@@ -134,7 +134,20 @@ This repository contains the backend for a scheduling application built with Nes
 | GET    | `/api/v1/appointments/doctors`            | list doctors (optional `?specialization=`) |
 | POST   | `/api/v1/appointments`                    | book appointment (patient only) |
 | POST   | `/api/v1/appointments/:id/cancel`         | cancel your appointment |
-| GET    | `/api/v1/appointments`                    | fetch current patient’s appointments || POST   | `/api/v1/auth/request-verification` | generate OTP for email/phone (requires JWT) |
+| GET    | `/api/v1/appointments`                    | fetch current patient’s appointments |
+
+### Doctor-specific endpoints (week 1 & 2)
+
+| Method | Path                                      | Description |
+|--------|-------------------------------------------|-------------|
+| GET    | `/api/v1/doctor/profile`                  | get own profile (doctor only) |
+| PUT    | `/api/v1/doctor/profile`                  | update profile / specializations |
+| POST   | `/api/v1/doctor/slots`                    | create availability slot |
+| GET    | `/api/v1/doctor/slots`                    | list your slots |
+| GET    | `/api/v1/doctor/appointments`            | fetch appointments assigned to you |
+| POST   | `/api/v1/doctor/appointments/:id/cancel` | cancel an appointment as a doctor |
+
+| POST   | `/api/v1/auth/request-verification` | generate OTP for email/phone (requires JWT) |
 | POST   | `/api/v1/auth/verify`     | submit OTP and type (`email`/`phone`) |
 | POST   | `/api/v1/auth/onboard`    | complete profile details |
 | POST   | `/api/v1/auth/google`     | start OAuth flow (stubbed) |
